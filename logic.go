@@ -2,7 +2,7 @@ package main
 
 import "strings"
 
-func CreateProject(store *Store, key, name string) (Project, error) {
+func CreateProject(store ProjectStore, key, name string) (Project, error) {
 	key = strings.TrimSpace(key)
 	name = strings.TrimSpace(name)
 
@@ -15,11 +15,16 @@ func CreateProject(store *Store, key, name string) (Project, error) {
 		return Project{}, ErrProjectKeyExists
 	}
 
-	created := store.Create(Project{Key: key, Name: name})
+	created := store.CreateProject(Project{Key: key, Name: name})
 	return created, nil
 }
 
-func CreateIssue(store *Store, projectKey, title string) (Issue, error) {
+type ProjectIssueStore interface {
+	ProjectStore
+	IssueStore
+}
+
+func CreateIssue(store ProjectIssueStore, projectKey, title string) (Issue, error) {
 	projectKey = strings.TrimSpace(projectKey)
 	title = strings.TrimSpace(title)
 
@@ -43,7 +48,7 @@ func CreateIssue(store *Store, projectKey, title string) (Issue, error) {
 	return created, nil
 }
 
-func TransitionIssue(store *Store, issueID int, toStatus string) (Issue, error) {
+func TransitionIssue(store IssueStore, issueID int, toStatus string) (Issue, error) {
 	toStatus = strings.TrimSpace(toStatus)
 	if toStatus == "" || issueID <= 0 {
 		return Issue{}, ErrInvalidIssue
@@ -77,7 +82,7 @@ func isAllowed(status string, toStatus string) bool {
 	return false
 }
 
-func GetIssue(store *Store, id int) (Issue, error) {
+func GetIssue(store IssueStore, id int) (Issue, error) {
 	if id <= 0 {
 		return Issue{}, ErrInvalidID
 	}

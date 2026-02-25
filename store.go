@@ -25,6 +25,10 @@ func (s *Store) Create(p Project) Project {
 	return p
 }
 
+func (s *Store) CreateProject(p Project) Project {
+	return s.Create(p)
+}
+
 func (s *Store) List() []Project {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
