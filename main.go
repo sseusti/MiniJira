@@ -12,6 +12,8 @@ import (
 
 var ErrInvalidProject = errors.New("invalid project")
 var ErrProjectKeyExists = errors.New("project key already exists")
+var ErrInvalidIssue = errors.New("invalid issue")
+var ErrProjectNotFound = errors.New("project not found")
 
 type Project struct {
 	ID   int
@@ -20,9 +22,22 @@ type Project struct {
 }
 
 type Store struct {
-	projects []Project
-	mu       sync.RWMutex
-	nextID   int
+	issues      []Issue
+	projects    []Project
+	mu          sync.RWMutex
+	nextID      int
+	nextIssueId int
+}
+
+func (s *Store) CreateIssue(i Issue) Issue {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	i.ID = s.nextIssueId
+	s.nextIssueId++
+	s.issues = append(s.issues, i)
+
+	return i
 }
 
 func (s *Store) Create(p Project) Project {
@@ -60,7 +75,7 @@ func (s *Store) GetByKey(key string) (Project, bool) {
 }
 
 func NewStore() *Store {
-	return &Store{nextID: 1}
+	return &Store{nextID: 1, nextIssueId: 1}
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {
@@ -112,6 +127,34 @@ func main() {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	})
+	mux.HandleFunc("/issues", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		var issue Issue
+		err := json.NewDecoder(r.Body).Decode(&issue)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		created, err := CreateIssue(s, issue.ProjectKey, issue.Title)
+		if errors.Is(err, ErrInvalidIssue) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		} else if errors.Is(err, ErrProjectNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		WriteJSON(w, http.StatusCreated, created)
+		return
+	})
 
 	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
@@ -138,5 +181,36 @@ func CreateProject(store *Store, key, name string) (Project, error) {
 	}
 
 	created := store.Create(Project{Key: key, Name: name})
+	return created, nil
+}
+
+type Issue struct {
+	ID         int
+	ProjectKey string
+	Title      string
+	Status     string
+}
+
+func CreateIssue(store *Store, projectKey, title string) (Issue, error) {
+	projectKey = strings.TrimSpace(projectKey)
+	title = strings.TrimSpace(title)
+
+	if projectKey == "" || title == "" {
+		return Issue{}, ErrInvalidIssue
+	}
+
+	_, ok := store.GetByKey(projectKey)
+	if !ok {
+		return Issue{}, ErrProjectNotFound
+	}
+
+	issue := Issue{
+		ProjectKey: projectKey,
+		Title:      title,
+		Status:     "OPEN",
+	}
+
+	created := store.CreateIssue(issue)
+
 	return created, nil
 }
