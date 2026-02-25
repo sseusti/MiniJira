@@ -14,6 +14,8 @@ var ErrInvalidProject = errors.New("invalid project")
 var ErrProjectKeyExists = errors.New("project key already exists")
 var ErrInvalidIssue = errors.New("invalid issue")
 var ErrProjectNotFound = errors.New("project not found")
+var ErrInvalidTransition = errors.New("invalid transition")
+var ErrIssueNotFound = errors.New("issue not found")
 
 type Project struct {
 	ID   int
@@ -86,6 +88,33 @@ func (s *Store) ListIssuesByProjectKey(projectKey string) []Issue {
 	}
 
 	return res
+}
+
+func (s *Store) GetIssueByID(id int) (Issue, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, i := range s.issues {
+		if i.ID == id {
+			return i, true
+		}
+	}
+
+	return Issue{}, false
+}
+
+func (s *Store) UpdateIssueStatus(id int, newStatus string) (Issue, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	issue, ok := s.GetIssueByID(id)
+	if !ok {
+		return Issue{}, false
+	}
+
+	issue.Status = newStatus
+
+	return issue, true
 }
 
 func NewStore() *Store {
@@ -179,6 +208,37 @@ func main() {
 			return
 		}
 	})
+	mux.HandleFunc("/issues/transition", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		var issue TransitionIssueRequest
+		err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&issue)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		updated, err := TransitionIssue(s, issue.IssueID, issue.ToStatus)
+		if errors.Is(err, ErrInvalidIssue) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		} else if errors.Is(err, ErrIssueNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if errors.Is(err, ErrInvalidTransition) {
+			w.WriteHeader(http.StatusConflict)
+			return
+		} else if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		WriteJSON(w, http.StatusOK, updated)
+		return
+	})
 
 	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
@@ -231,7 +291,7 @@ func CreateIssue(store *Store, projectKey, title string) (Issue, error) {
 	issue := Issue{
 		ProjectKey: projectKey,
 		Title:      title,
-		Status:     "OPEN",
+		Status:     StatusOpen,
 	}
 
 	created := store.CreateIssue(issue)
@@ -242,4 +302,49 @@ func CreateIssue(store *Store, projectKey, title string) (Issue, error) {
 type CreateIssueRequest struct {
 	ProjectKey string `json:"project_key"`
 	Title      string `json:"title"`
+}
+
+const (
+	StatusOpen       = "OPEN"
+	StatusInProgress = "IN_PROGRESS"
+	StatusClosed     = "CLOSED"
+)
+
+type TransitionIssueRequest struct {
+	IssueID  int    `json:"issue_id"`
+	ToStatus string `json:"to_status"`
+}
+
+func TransitionIssue(store *Store, issueID int, toStatus string) (Issue, error) {
+	toStatus = strings.TrimSpace(toStatus)
+	if toStatus == "" || issueID <= 0 {
+		return Issue{}, ErrInvalidIssue
+	}
+
+	issue, ok := store.GetIssueByID(issueID)
+	if !ok {
+		return Issue{}, ErrIssueNotFound
+	}
+	ok = isAllowed(issue.Status, toStatus)
+	if !ok {
+		return Issue{}, ErrInvalidTransition
+	}
+
+	updated, ok := store.UpdateIssueStatus(issue.ID, toStatus)
+	if !ok {
+		return Issue{}, ErrIssueNotFound
+	}
+
+	return updated, nil
+}
+
+func isAllowed(status string, toStatus string) bool {
+	if status == StatusOpen || toStatus == StatusInProgress {
+		return true
+	}
+	if status == StatusInProgress || toStatus == StatusClosed {
+		return true
+	}
+
+	return false
 }
