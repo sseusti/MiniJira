@@ -1,4 +1,4 @@
-package main
+package logic
 
 type ProjectStore interface {
 	GetByKey(key string) (Project, bool)

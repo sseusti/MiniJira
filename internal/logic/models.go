@@ -1,4 +1,4 @@
-package main
+package logic
 
 type Project struct {
 	ID   int

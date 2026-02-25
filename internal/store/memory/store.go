@@ -1,10 +1,13 @@
-package main
+package memory
 
-import "sync"
+import (
+	"MiniJira/internal/logic"
+	"sync"
+)
 
 type Store struct {
-	issues      []Issue
-	projects    []Project
+	issues      []logic.Issue
+	projects    []logic.Project
 	mu          sync.RWMutex
 	nextID      int
 	nextIssueID int
@@ -14,7 +17,7 @@ func NewStore() *Store {
 	return &Store{nextID: 1, nextIssueID: 1}
 }
 
-func (s *Store) Create(p Project) Project {
+func (s *Store) Create(p logic.Project) logic.Project {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -25,21 +28,21 @@ func (s *Store) Create(p Project) Project {
 	return p
 }
 
-func (s *Store) CreateProject(p Project) Project {
+func (s *Store) CreateProject(p logic.Project) logic.Project {
 	return s.Create(p)
 }
 
-func (s *Store) List() []Project {
+func (s *Store) List() []logic.Project {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	projects := make([]Project, len(s.projects))
+	projects := make([]logic.Project, len(s.projects))
 	copy(projects, s.projects)
 
 	return projects
 }
 
-func (s *Store) GetByKey(key string) (Project, bool) {
+func (s *Store) GetByKey(key string) (logic.Project, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -49,10 +52,10 @@ func (s *Store) GetByKey(key string) (Project, bool) {
 		}
 	}
 
-	return Project{}, false
+	return logic.Project{}, false
 }
 
-func (s *Store) CreateIssue(i Issue) Issue {
+func (s *Store) CreateIssue(i logic.Issue) logic.Issue {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -63,7 +66,7 @@ func (s *Store) CreateIssue(i Issue) Issue {
 	return i
 }
 
-func (s *Store) GetIssueByID(id int) (Issue, bool) {
+func (s *Store) GetIssueByID(id int) (logic.Issue, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -73,10 +76,10 @@ func (s *Store) GetIssueByID(id int) (Issue, bool) {
 		}
 	}
 
-	return Issue{}, false
+	return logic.Issue{}, false
 }
 
-func (s *Store) UpdateIssueStatus(id int, newStatus string) (Issue, bool) {
+func (s *Store) UpdateIssueStatus(id int, newStatus string) (logic.Issue, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -87,14 +90,14 @@ func (s *Store) UpdateIssueStatus(id int, newStatus string) (Issue, bool) {
 		}
 	}
 
-	return Issue{}, false
+	return logic.Issue{}, false
 }
 
-func (s *Store) ListIssuesByProjectKey(projectKey string) []Issue {
+func (s *Store) ListIssuesByProjectKey(projectKey string) []logic.Issue {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	res := make([]Issue, 0, len(s.issues))
+	res := make([]logic.Issue, 0, len(s.issues))
 	for _, i := range s.issues {
 		if i.ProjectKey == projectKey {
 			res = append(res, i)

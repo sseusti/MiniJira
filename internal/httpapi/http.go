@@ -1,6 +1,8 @@
-package main
+package httpapi
 
 import (
+	"MiniJira/internal/logic"
+	"MiniJira/internal/store/memory"
 	"encoding/json"
 	"errors"
 	"io"
@@ -32,7 +34,7 @@ type TransitionIssueRequest struct {
 	ToStatus string `json:"to_status"`
 }
 
-func NewMux(s *Store) *http.ServeMux {
+func NewMux(s *memory.Store) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -46,11 +48,11 @@ func NewMux(s *Store) *http.ServeMux {
 				return
 			}
 
-			created, err := CreateProject(s, req.Key, req.Name)
-			if errors.Is(err, ErrInvalidProject) {
+			created, err := logic.CreateProject(s, req.Key, req.Name)
+			if errors.Is(err, logic.ErrInvalidProject) {
 				w.WriteHeader(http.StatusBadRequest)
 				return
-			} else if errors.Is(err, ErrProjectKeyExists) {
+			} else if errors.Is(err, logic.ErrProjectKeyExists) {
 				w.WriteHeader(http.StatusConflict)
 				return
 			} else if err != nil {
@@ -80,11 +82,11 @@ func NewMux(s *Store) *http.ServeMux {
 				return
 			}
 
-			created, err := CreateIssue(s, issue.ProjectKey, issue.Title)
-			if errors.Is(err, ErrInvalidIssue) {
+			created, err := logic.CreateIssue(s, issue.ProjectKey, issue.Title)
+			if errors.Is(err, logic.ErrInvalidIssue) {
 				w.WriteHeader(http.StatusBadRequest)
 				return
-			} else if errors.Is(err, ErrProjectNotFound) {
+			} else if errors.Is(err, logic.ErrProjectNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			} else if err != nil {
@@ -122,14 +124,14 @@ func NewMux(s *Store) *http.ServeMux {
 			return
 		}
 
-		updated, err := TransitionIssue(s, issue.IssueID, issue.ToStatus)
-		if errors.Is(err, ErrInvalidIssue) {
+		updated, err := logic.TransitionIssue(s, issue.IssueID, issue.ToStatus)
+		if errors.Is(err, logic.ErrInvalidIssue) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
-		} else if errors.Is(err, ErrIssueNotFound) {
+		} else if errors.Is(err, logic.ErrIssueNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
-		} else if errors.Is(err, ErrInvalidTransition) {
+		} else if errors.Is(err, logic.ErrInvalidTransition) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		} else if err != nil {
@@ -159,11 +161,11 @@ func NewMux(s *Store) *http.ServeMux {
 			return
 		}
 
-		issue, err := GetIssue(s, id)
-		if errors.Is(err, ErrIssueNotFound) {
+		issue, err := logic.GetIssue(s, id)
+		if errors.Is(err, logic.ErrIssueNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
-		} else if errors.Is(err, ErrInvalidID) {
+		} else if errors.Is(err, logic.ErrInvalidID) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		} else if err != nil {

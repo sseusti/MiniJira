@@ -1,6 +1,8 @@
-package main
+package logic
 
-import "strings"
+import (
+	"strings"
+)
 
 func CreateProject(store ProjectStore, key, name string) (Project, error) {
 	key = strings.TrimSpace(key)
