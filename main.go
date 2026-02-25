@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -16,6 +17,7 @@ var ErrInvalidIssue = errors.New("invalid issue")
 var ErrProjectNotFound = errors.New("project not found")
 var ErrInvalidTransition = errors.New("invalid transition")
 var ErrIssueNotFound = errors.New("issue not found")
+var ErrInvalidID = errors.New("invalid id")
 
 type Project struct {
 	ID   int
@@ -239,6 +241,40 @@ func main() {
 		WriteJSON(w, http.StatusOK, updated)
 		return
 	})
+	mux.HandleFunc("/issue", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		idStr := r.URL.Query().Get("id")
+		idStr = strings.TrimSpace(idStr)
+		if idStr == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(idStr)
+		if err != nil || id < 1 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		issue, err := GetIssue(s, id)
+		if errors.Is(err, ErrIssueNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else if errors.Is(err, ErrInvalidID) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		} else if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		WriteJSON(w, http.StatusOK, issue)
+		return
+	})
 
 	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
@@ -347,4 +383,17 @@ func isAllowed(status string, toStatus string) bool {
 	}
 
 	return false
+}
+
+func GetIssue(store *Store, id int) (Issue, error) {
+	if id <= 0 {
+		return Issue{}, ErrInvalidID
+	}
+
+	issue, ok := store.GetIssueByID(id)
+	if !ok {
+		return Issue{}, ErrIssueNotFound
+	}
+
+	return issue, nil
 }
