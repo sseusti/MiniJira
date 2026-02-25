@@ -26,15 +26,15 @@ type Store struct {
 	projects    []Project
 	mu          sync.RWMutex
 	nextID      int
-	nextIssueId int
+	nextIssueID int
 }
 
 func (s *Store) CreateIssue(i Issue) Issue {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	i.ID = s.nextIssueId
-	s.nextIssueId++
+	i.ID = s.nextIssueID
+	s.nextIssueID++
 	s.issues = append(s.issues, i)
 
 	return i
@@ -74,8 +74,22 @@ func (s *Store) GetByKey(key string) (Project, bool) {
 	return Project{}, false
 }
 
+func (s *Store) ListIssuesByProjectKey(projectKey string) []Issue {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	res := make([]Issue, 0, len(s.issues))
+	for _, i := range s.issues {
+		if i.ProjectKey == projectKey {
+			res = append(res, i)
+		}
+	}
+
+	return res
+}
+
 func NewStore() *Store {
-	return &Store{nextID: 1, nextIssueId: 1}
+	return &Store{nextID: 1, nextIssueID: 1}
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {
@@ -128,32 +142,42 @@ func main() {
 		return
 	})
 	mux.HandleFunc("/issues", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+		if r.Method == http.MethodPost {
+			var issue CreateIssueRequest
+			err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&issue)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			created, err := CreateIssue(s, issue.ProjectKey, issue.Title)
+			if errors.Is(err, ErrInvalidIssue) {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			} else if errors.Is(err, ErrProjectNotFound) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			} else if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			WriteJSON(w, http.StatusCreated, created)
 			return
 		}
+		if r.Method == http.MethodGet {
+			projectKey := r.URL.Query().Get("project_key")
 
-		var issue Issue
-		err := json.NewDecoder(r.Body).Decode(&issue)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			projectKey = strings.TrimSpace(projectKey)
+			if projectKey == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			issues := s.ListIssuesByProjectKey(projectKey)
+			WriteJSON(w, http.StatusOK, issues)
 			return
 		}
-
-		created, err := CreateIssue(s, issue.ProjectKey, issue.Title)
-		if errors.Is(err, ErrInvalidIssue) {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		} else if errors.Is(err, ErrProjectNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		} else if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		WriteJSON(w, http.StatusCreated, created)
-		return
 	})
 
 	err := http.ListenAndServe(":8080", mux)
@@ -213,4 +237,9 @@ func CreateIssue(store *Store, projectKey, title string) (Issue, error) {
 	created := store.CreateIssue(issue)
 
 	return created, nil
+}
+
+type CreateIssueRequest struct {
+	ProjectKey string `json:"project_key"`
+	Title      string `json:"title"`
 }
