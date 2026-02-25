@@ -107,14 +107,14 @@ func (s *Store) UpdateIssueStatus(id int, newStatus string) (Issue, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	issue, ok := s.GetIssueByID(id)
-	if !ok {
-		return Issue{}, false
+	for i := range s.issues {
+		if s.issues[i].ID == id {
+			s.issues[i].Status = newStatus
+			return s.issues[i], true
+		}
 	}
 
-	issue.Status = newStatus
-
-	return issue, true
+	return Issue{}, false
 }
 
 func NewStore() *Store {
@@ -307,7 +307,7 @@ type CreateIssueRequest struct {
 const (
 	StatusOpen       = "OPEN"
 	StatusInProgress = "IN_PROGRESS"
-	StatusClosed     = "CLOSED"
+	StatusDone       = "DONE"
 )
 
 type TransitionIssueRequest struct {
@@ -339,10 +339,10 @@ func TransitionIssue(store *Store, issueID int, toStatus string) (Issue, error) 
 }
 
 func isAllowed(status string, toStatus string) bool {
-	if status == StatusOpen || toStatus == StatusInProgress {
+	if status == StatusOpen && toStatus == StatusInProgress {
 		return true
 	}
-	if status == StatusInProgress || toStatus == StatusClosed {
+	if status == StatusInProgress && toStatus == StatusDone {
 		return true
 	}
 
