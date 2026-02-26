@@ -57,7 +57,7 @@ func NewMux(s *memory.Store) http.Handler {
 				WriteError(w, http.StatusConflict, "conflict")
 				return
 			} else if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				WriteError(w, http.StatusInternalServerError, "internal error")
 				return
 			}
 
@@ -91,7 +91,7 @@ func NewMux(s *memory.Store) http.Handler {
 				WriteError(w, http.StatusNotFound, "not found")
 				return
 			} else if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				WriteError(w, http.StatusInternalServerError, "internal error")
 				return
 			}
 
@@ -136,7 +136,7 @@ func NewMux(s *memory.Store) http.Handler {
 			WriteError(w, http.StatusConflict, "conflict")
 			return
 		} else if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
 
@@ -170,7 +170,7 @@ func NewMux(s *memory.Store) http.Handler {
 			WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		} else if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			WriteError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
 
