@@ -33,6 +33,11 @@ func Logger(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 
 		dur := time.Since(start)
+
+		status := rec.status
+		if status == 0 {
+			status = http.StatusOK
+		}
 		log.Printf("HTTP %d %s %s %s", rec.status, dur.Round(time.Millisecond), r.Method, r.URL.RequestURI())
 	})
 }
