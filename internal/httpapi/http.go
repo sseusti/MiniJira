@@ -45,16 +45,16 @@ func NewMux(s *memory.Store) http.Handler {
 			var req CreateProjectRequest
 			err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&req)
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
+				WriteError(w, http.StatusBadRequest, "invalid request")
 				return
 			}
 
 			created, err := logic.CreateProject(s, req.Key, req.Name)
 			if errors.Is(err, logic.ErrInvalidProject) {
-				w.WriteHeader(http.StatusBadRequest)
+				WriteError(w, http.StatusBadRequest, "invalid request")
 				return
 			} else if errors.Is(err, logic.ErrProjectKeyExists) {
-				w.WriteHeader(http.StatusConflict)
+				WriteError(w, http.StatusConflict, "conflict")
 				return
 			} else if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -71,7 +71,7 @@ func NewMux(s *memory.Store) http.Handler {
 			return
 		}
 
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	})
 	mux.HandleFunc("/issues", func(w http.ResponseWriter, r *http.Request) {
@@ -79,16 +79,16 @@ func NewMux(s *memory.Store) http.Handler {
 			var issue CreateIssueRequest
 			err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&issue)
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
+				WriteError(w, http.StatusBadRequest, "invalid request")
 				return
 			}
 
 			created, err := logic.CreateIssue(s, issue.ProjectKey, issue.Title)
 			if errors.Is(err, logic.ErrInvalidIssue) {
-				w.WriteHeader(http.StatusBadRequest)
+				WriteError(w, http.StatusBadRequest, "invalid request")
 				return
 			} else if errors.Is(err, logic.ErrProjectNotFound) {
-				w.WriteHeader(http.StatusNotFound)
+				WriteError(w, http.StatusNotFound, "not found")
 				return
 			} else if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -103,7 +103,7 @@ func NewMux(s *memory.Store) http.Handler {
 
 			projectKey = strings.TrimSpace(projectKey)
 			if projectKey == "" {
-				w.WriteHeader(http.StatusBadRequest)
+				WriteError(w, http.StatusBadRequest, "invalid request")
 				return
 			}
 
@@ -114,26 +114,26 @@ func NewMux(s *memory.Store) http.Handler {
 	})
 	mux.HandleFunc("/issues/transition", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
 
 		var issue TransitionIssueRequest
 		err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&issue)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		}
 
 		updated, err := logic.TransitionIssue(s, issue.IssueID, issue.ToStatus)
 		if errors.Is(err, logic.ErrInvalidIssue) {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		} else if errors.Is(err, logic.ErrIssueNotFound) {
-			w.WriteHeader(http.StatusNotFound)
+			WriteError(w, http.StatusNotFound, "not found")
 			return
 		} else if errors.Is(err, logic.ErrInvalidTransition) {
-			w.WriteHeader(http.StatusConflict)
+			WriteError(w, http.StatusConflict, "conflict")
 			return
 		} else if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -145,29 +145,29 @@ func NewMux(s *memory.Store) http.Handler {
 	})
 	mux.HandleFunc("/issue", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+			WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
 
 		idStr := r.URL.Query().Get("id")
 		idStr = strings.TrimSpace(idStr)
 		if idStr == "" {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		}
 
 		id, err := strconv.Atoi(idStr)
 		if err != nil || id < 1 {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		}
 
 		issue, err := logic.GetIssue(s, id)
 		if errors.Is(err, logic.ErrIssueNotFound) {
-			w.WriteHeader(http.StatusNotFound)
+			WriteError(w, http.StatusNotFound, "not found")
 			return
 		} else if errors.Is(err, logic.ErrInvalidID) {
-			w.WriteHeader(http.StatusBadRequest)
+			WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		} else if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
