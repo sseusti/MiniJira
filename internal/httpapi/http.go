@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"MiniJira/internal/httpapi/middleware"
 	"MiniJira/internal/logic"
 	"MiniJira/internal/store/memory"
 	"encoding/json"
@@ -34,7 +35,7 @@ type TransitionIssueRequest struct {
 	ToStatus string `json:"to_status"`
 }
 
-func NewMux(s *memory.Store) *http.ServeMux {
+func NewMux(s *memory.Store) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -177,5 +178,5 @@ func NewMux(s *memory.Store) *http.ServeMux {
 		return
 	})
 
-	return mux
+	return middleware.Logger(mux)
 }
