@@ -37,6 +37,7 @@ const docTemplate = `{
         },
         "/issue": {
             "get": {
+                "description": "Returns issue by ID",
                 "produces": [
                     "application/json"
                 ],

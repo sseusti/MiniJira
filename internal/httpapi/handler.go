@@ -148,6 +148,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 
 // ListIssues godoc
 // @Summary List issues by project key
+// @Description Returns issues for a project (filter is required)
 // @Tags issues
 // @Produce json
 // @Param project_key query string true "Project key"
@@ -184,6 +185,7 @@ func (h *Handler) Issues(w http.ResponseWriter, r *http.Request) {
 
 // GetIssue godoc
 // @Summary Get issue by id
+// @Description Returns issue by ID
 // @Tags issues
 // @Produce json
 // @Param id query int true "Issue ID"
