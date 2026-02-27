@@ -70,7 +70,7 @@ func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
 // @Router /projects [get]
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	p := h.projectStore.List()
-	WriteJSON(w, http.StatusOK, p)
+	WriteJSON(w, http.StatusOK, toProjectResponses(p))
 	return
 }
 
@@ -106,7 +106,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusCreated, ProjectResponse{ID: created.ID, Key: created.Key, Name: created.Name})
+	WriteJSON(w, http.StatusCreated, toProjectResponse(created))
 	return
 }
 
@@ -142,7 +142,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusCreated, IssueResponse{ID: created.ID, ProjectKey: created.ProjectKey, Title: created.Title, Status: created.Status})
+	WriteJSON(w, http.StatusCreated, toIssueResponse(created))
 	return
 }
 
@@ -165,7 +165,7 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 	}
 
 	issues := h.issueStore.ListIssuesByProjectKey(projectKey)
-	WriteJSON(w, http.StatusOK, issues)
+	WriteJSON(w, http.StatusOK, toIssueResponses(issues))
 	return
 }
 
@@ -218,7 +218,7 @@ func (h *Handler) GetIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, issue)
+	WriteJSON(w, http.StatusOK, toIssueResponse(issue))
 	return
 }
 
@@ -267,7 +267,7 @@ func (h *Handler) TransitionIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, updated)
+	WriteJSON(w, http.StatusOK, toIssueResponse(updated))
 	return
 }
 
