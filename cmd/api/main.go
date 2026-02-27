@@ -22,7 +22,7 @@ func main() {
 	s := memory.NewStore()
 	cfg := config.LoadConfig()
 
-	mux := httpapi.NewMux(s)
+	mux := httpapi.NewMux(s, s, s)
 
 	srv := &http.Server{Addr: ":" + cfg.HTTPPort, Handler: mux}
 

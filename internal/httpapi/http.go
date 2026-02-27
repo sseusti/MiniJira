@@ -3,7 +3,7 @@ package httpapi
 import (
 	_ "MiniJira/docs"
 	"MiniJira/internal/httpapi/middleware"
-	"MiniJira/internal/store/memory"
+	"MiniJira/internal/logic"
 	"encoding/json"
 	"net/http"
 
@@ -37,8 +37,8 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
-func NewMux(s *memory.Store) http.Handler {
-	h := NewHandler(s, s, s)
+func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore) http.Handler {
+	h := NewHandler(projectStore, issueStore, piStore)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", h.Health)
