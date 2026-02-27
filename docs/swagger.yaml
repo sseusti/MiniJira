@@ -1,4 +1,253 @@
+basePath: /
+definitions:
+  httpapi.CreateIssueRequest:
+    properties:
+      project_key:
+        type: string
+      title:
+        type: string
+    type: object
+  httpapi.CreateProjectRequest:
+    properties:
+      key:
+        type: string
+      name:
+        type: string
+    type: object
+  httpapi.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  httpapi.HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  httpapi.IssueResponse:
+    properties:
+      id:
+        type: integer
+      project_key:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  httpapi.ProjectResponse:
+    properties:
+      id:
+        type: integer
+      key:
+        type: string
+      name:
+        type: string
+    type: object
+  httpapi.TransitionIssueRequest:
+    properties:
+      issue_id:
+        type: integer
+      to_status:
+        type: string
+    type: object
 info:
   contact: {}
-paths: {}
+  description: '...'
+  title: MiniJira API
+  version: "0.1"
+paths:
+  /health:
+    get:
+      description: Check service availability
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.HealthResponse'
+      summary: Health check
+      tags:
+      - system
+  /issue:
+    get:
+      parameters:
+      - description: Issue ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.IssueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Get issue by id
+      tags:
+      - issues
+  /issues:
+    get:
+      parameters:
+      - description: Project key
+        in: query
+        name: project_key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/httpapi.IssueResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: List issues by project key
+      tags:
+      - issues
+    post:
+      consumes:
+      - application/json
+      description: Create an issue in existing project
+      parameters:
+      - description: Issue payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.CreateIssueRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httpapi.IssueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Create issue
+      tags:
+      - issues
+  /issues/transition:
+    post:
+      consumes:
+      - application/json
+      description: Change issue status following allowed transitions
+      parameters:
+      - description: Transition payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.TransitionIssueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.IssueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Transition issue status
+      tags:
+      - issues
+  /projects:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/httpapi.ProjectResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: List projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Create a new project with unique key
+      parameters:
+      - description: Project payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.CreateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httpapi.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Create project
+      tags:
+      - projects
 swagger: "2.0"

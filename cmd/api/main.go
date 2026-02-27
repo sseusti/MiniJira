@@ -1,3 +1,7 @@
+// @Title MiniJira API
+// @Version 0.1
+// @Description ...
+// @BasePath /
 package main
 
 import (
