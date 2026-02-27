@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	_ "MiniJira/docs"
 	"MiniJira/internal/httpapi/middleware"
 	"MiniJira/internal/logic"
 	"MiniJira/internal/store/memory"
@@ -10,6 +11,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {
@@ -35,11 +38,18 @@ type TransitionIssueRequest struct {
 	ToStatus string `json:"to_status"`
 }
 
+type HealthResponse struct {
+	Status string `json:"status"`
+}
+
 func NewMux(s *memory.Store) http.Handler {
 	mux := http.NewServeMux()
+
+	// @Success 200 {HealthResponse}
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		WriteJSON(w, http.StatusOK, HealthResponse{Status: "ok"})
 	})
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 	mux.HandleFunc("/projects", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			var req CreateProjectRequest
