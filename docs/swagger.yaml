@@ -103,6 +103,7 @@ paths:
       - issues
   /issues:
     get:
+      description: Returns issues for a project (filter is required)
       parameters:
       - description: Project key
         in: query

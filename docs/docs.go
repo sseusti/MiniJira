@@ -84,6 +84,7 @@ const docTemplate = `{
         },
         "/issues": {
             "get": {
+                "description": "Returns issues for a project (filter is required)",
                 "produces": [
                     "application/json"
                 ],
