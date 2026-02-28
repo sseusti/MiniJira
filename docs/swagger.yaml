@@ -27,6 +27,7 @@ definitions:
   httpapi.HealthResponse:
     properties:
       status:
+        example: ok
         type: string
     type: object
   httpapi.IssueResponse:
@@ -38,6 +39,10 @@ definitions:
         example: PAY
         type: string
       status:
+        enum:
+        - OPEN
+        - IN_PROGRESS
+        - DONE
         example: OPEN
         type: string
       title:
@@ -62,6 +67,10 @@ definitions:
         example: 1
         type: integer
       to_status:
+        enum:
+        - OPEN
+        - IN_PROGRESS
+        - DONE
         example: IN_PROGRESS
         type: string
     type: object

@@ -20,7 +20,7 @@ type IssueResponse struct {
 	ID         int    `json:"id" example:"10"`
 	ProjectKey string `json:"project_key" example:"PAY"`
 	Title      string `json:"title" example:"Fix checkout validation"`
-	Status     string `json:"status" example:"OPEN"`
+	Status     string `json:"status" example:"OPEN" enums:"OPEN,IN_PROGRESS,DONE"`
 }
 
 type Handler struct {

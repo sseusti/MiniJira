@@ -346,7 +346,8 @@
             "type": "object",
             "properties": {
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -363,6 +364,11 @@
                 },
                 "status": {
                     "type": "string",
+                    "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "DONE"
+                    ],
                     "example": "OPEN"
                 },
                 "title": {
@@ -397,6 +403,11 @@
                 },
                 "to_status": {
                     "type": "string",
+                    "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "DONE"
+                    ],
                     "example": "IN_PROGRESS"
                 }
             }

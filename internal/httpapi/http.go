@@ -30,11 +30,11 @@ type CreateIssueRequest struct {
 
 type TransitionIssueRequest struct {
 	IssueID  int    `json:"issue_id" example:"1"`
-	ToStatus string `json:"to_status" example:"IN_PROGRESS"`
+	ToStatus string `json:"to_status" example:"IN_PROGRESS" enums:"OPEN,IN_PROGRESS,DONE"`
 }
 
 type HealthResponse struct {
-	Status string `json:"status"`
+	Status string `json:"status" example:"ok"`
 }
 
 func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore) http.Handler {

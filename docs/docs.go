@@ -353,7 +353,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -370,6 +371,11 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string",
+                    "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "DONE"
+                    ],
                     "example": "OPEN"
                 },
                 "title": {
@@ -404,6 +410,11 @@ const docTemplate = `{
                 },
                 "to_status": {
                     "type": "string",
+                    "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "DONE"
+                    ],
                     "example": "IN_PROGRESS"
                 }
             }
