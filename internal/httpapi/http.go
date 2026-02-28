@@ -19,18 +19,18 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 }
 
 type CreateProjectRequest struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
+	Key  string `json:"key" example:"PAY"`
+	Name string `json:"name" example:"Payments"`
 }
 
 type CreateIssueRequest struct {
-	ProjectKey string `json:"project_key"`
-	Title      string `json:"title"`
+	ProjectKey string `json:"project_key" example:"PAY"`
+	Title      string `json:"title" example:"Fix checkout validation"`
 }
 
 type TransitionIssueRequest struct {
-	IssueID  int    `json:"issue_id"`
-	ToStatus string `json:"to_status"`
+	IssueID  int    `json:"issue_id" example:"1"`
+	ToStatus string `json:"to_status" example:"IN_PROGRESS"`
 }
 
 type HealthResponse struct {

@@ -11,16 +11,16 @@ import (
 )
 
 type ProjectResponse struct {
-	ID   int    `json:"id"`
-	Key  string `json:"key"`
-	Name string `json:"name"`
+	ID   int    `json:"id" example:"1"`
+	Key  string `json:"key" example:"PAY"`
+	Name string `json:"name" example:"Payments"`
 }
 
 type IssueResponse struct {
-	ID         int    `json:"id"`
-	ProjectKey string `json:"project_key"`
-	Title      string `json:"title"`
-	Status     string `json:"status"`
+	ID         int    `json:"id" example:"10"`
+	ProjectKey string `json:"project_key" example:"PAY"`
+	Title      string `json:"title" example:"Fix checkout validation"`
+	Status     string `json:"status" example:"OPEN"`
 }
 
 type Handler struct {

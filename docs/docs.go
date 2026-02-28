@@ -318,10 +318,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "project_key": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "PAY"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Fix checkout validation"
                 }
             }
         },
@@ -329,10 +331,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "key": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "PAY"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Payments"
                 }
             }
         },
@@ -340,7 +344,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "invalid request"
                 }
             }
         },
@@ -356,16 +361,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 },
                 "project_key": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "PAY"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "OPEN"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Fix checkout validation"
                 }
             }
         },
@@ -373,13 +382,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "key": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "PAY"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Payments"
                 }
             }
         },
@@ -387,10 +399,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "issue_id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "to_status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "IN_PROGRESS"
                 }
             }
         }

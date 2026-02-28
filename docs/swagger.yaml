@@ -3,20 +3,25 @@ definitions:
   httpapi.CreateIssueRequest:
     properties:
       project_key:
+        example: PAY
         type: string
       title:
+        example: Fix checkout validation
         type: string
     type: object
   httpapi.CreateProjectRequest:
     properties:
       key:
+        example: PAY
         type: string
       name:
+        example: Payments
         type: string
     type: object
   httpapi.ErrorResponse:
     properties:
       error:
+        example: invalid request
         type: string
     type: object
   httpapi.HealthResponse:
@@ -27,28 +32,37 @@ definitions:
   httpapi.IssueResponse:
     properties:
       id:
+        example: 10
         type: integer
       project_key:
+        example: PAY
         type: string
       status:
+        example: OPEN
         type: string
       title:
+        example: Fix checkout validation
         type: string
     type: object
   httpapi.ProjectResponse:
     properties:
       id:
+        example: 1
         type: integer
       key:
+        example: PAY
         type: string
       name:
+        example: Payments
         type: string
     type: object
   httpapi.TransitionIssueRequest:
     properties:
       issue_id:
+        example: 1
         type: integer
       to_status:
+        example: IN_PROGRESS
         type: string
     type: object
 info:
