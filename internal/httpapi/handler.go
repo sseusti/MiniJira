@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"MiniJira/internal/httpapi/middleware"
 	"MiniJira/internal/logic"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ProjectResponse struct {
@@ -27,13 +30,15 @@ type Handler struct {
 	projectStore logic.ProjectStore
 	issueStore   logic.IssueStore
 	piStore      logic.ProjectIssueStore
+	logger       *logrus.Logger
 }
 
-func NewHandler(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore) *Handler {
+func NewHandler(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore, logger *logrus.Logger) *Handler {
 	return &Handler{
 		projectStore: projectStore,
 		issueStore:   issueStore,
 		piStore:      piStore,
+		logger:       logger,
 	}
 }
 
@@ -102,6 +107,10 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusConflict, "conflict")
 		return
 	} else if err != nil {
+		h.logger.WithFields(logrus.Fields{
+			"rid": middleware.GetRequestID(r),
+			"op":  "create_project",
+		}).WithError(err).Error("operation failed")
 		WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -138,6 +147,10 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, "not found")
 		return
 	} else if err != nil {
+		h.logger.WithFields(logrus.Fields{
+			"rid": middleware.GetRequestID(r),
+			"op":  "create_issue",
+		}).WithError(err).Error("operation failed")
 		WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -216,6 +229,10 @@ func (h *Handler) GetIssue(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid request")
 		return
 	} else if err != nil {
+		h.logger.WithFields(logrus.Fields{
+			"rid": middleware.GetRequestID(r),
+			"op":  "get_issue",
+		}).WithError(err).Error("operation failed")
 		WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -265,6 +282,10 @@ func (h *Handler) TransitionIssue(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusConflict, "conflict")
 		return
 	} else if err != nil {
+		h.logger.WithFields(logrus.Fields{
+			"rid": middleware.GetRequestID(r),
+			"op":  "transition_issue",
+		}).WithError(err).Error("operation failed")
 		WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

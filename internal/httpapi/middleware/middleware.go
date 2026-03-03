@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type StatusRecorder struct {
@@ -24,21 +25,30 @@ func (r *StatusRecorder) Write(b []byte) (int, error) {
 	return r.ResponseWriter.Write(b)
 }
 
-func Logger(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rid := GetRequestID(r)
-		start := time.Now()
+func Logging(logger *logrus.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rid := GetRequestID(r)
+			start := time.Now()
 
-		rec := &StatusRecorder{ResponseWriter: w}
+			rec := &StatusRecorder{ResponseWriter: w}
 
-		next.ServeHTTP(rec, r)
+			next.ServeHTTP(rec, r)
 
-		dur := time.Since(start)
+			dur := time.Since(start)
 
-		status := rec.status
-		if status == 0 {
-			status = http.StatusOK
-		}
-		log.Printf("HTTP %d %s %s %s rid=%s", status, dur.Round(time.Millisecond), r.Method, r.URL.RequestURI(), rid)
-	})
+			status := rec.status
+			if status == 0 {
+				status = http.StatusOK
+			}
+
+			logger.WithFields(logrus.Fields{
+				"rid":         rid,
+				"status":      status,
+				"duration_ms": dur.Round(time.Millisecond),
+				"method":      r.Method,
+				"path":        r.URL.RequestURI(),
+			})
+		})
+	}
 }

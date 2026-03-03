@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
@@ -37,8 +38,8 @@ type HealthResponse struct {
 	Status string `json:"status" example:"ok"`
 }
 
-func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore) http.Handler {
-	h := NewHandler(projectStore, issueStore, piStore)
+func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore, logger *logrus.Logger) http.Handler {
+	h := NewHandler(projectStore, issueStore, piStore, logger)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", h.Health)
@@ -50,7 +51,7 @@ func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStor
 
 	handler := http.Handler(mux)
 	handler = middleware.RequestID(handler)
-	handler = middleware.Logger(handler)
+	handler = middleware.Logging(logger)(handler)
 
 	return handler
 }

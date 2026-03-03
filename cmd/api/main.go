@@ -10,19 +10,26 @@ import (
 	"MiniJira/internal/store/memory"
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	s := memory.NewStore()
 	cfg := config.LoadConfig()
 
-	mux := httpapi.NewMux(s, s, s)
+	logger := logrus.New()
+	logger.SetLevel(logrus.InfoLevel)
+	logger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+
+	logger.Info("starting server")
+
+	mux := httpapi.NewMux(s, s, s, logger)
 
 	srv := &http.Server{Addr: ":" + cfg.HTTPPort, Handler: mux}
 
@@ -32,7 +39,7 @@ func main() {
 			if errors.Is(err, http.ErrServerClosed) {
 				return
 			}
-			log.Fatal(err)
+			logger.WithError(err).Fatal("error starting server")
 		}
 	}()
 
@@ -45,7 +52,7 @@ func main() {
 
 	err := srv.Shutdown(ctx)
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).Fatal("error shutting down server")
 	}
 
 	return
