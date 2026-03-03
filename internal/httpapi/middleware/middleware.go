@@ -39,6 +39,6 @@ func Logger(next http.Handler) http.Handler {
 		if status == 0 {
 			status = http.StatusOK
 		}
-		log.Printf("HTTP %d %s %s %s rid=%s", rec.status, dur.Round(time.Millisecond), r.Method, r.URL.RequestURI(), rid)
+		log.Printf("HTTP %d %s %s %s rid=%s", status, dur.Round(time.Millisecond), r.Method, r.URL.RequestURI(), rid)
 	})
 }
