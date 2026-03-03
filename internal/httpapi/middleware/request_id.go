@@ -19,6 +19,7 @@ func RequestID(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), ctxKeyRequestID{}, rid)
+		r.Header.Set(HeaderRequestID, rid)
 		w.Header().Set(HeaderRequestID, rid)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -35,8 +36,8 @@ func NewRequestID() string {
 }
 
 func GetRequestID(r *http.Request) string {
-	if id, ok := r.Context().Value(ctxKeyRequestID{}).(string); ok {
+	if id, ok := r.Context().Value(ctxKeyRequestID{}).(string); ok && id != "" {
 		return id
 	}
-	return ""
+	return r.Header.Get(HeaderRequestID)
 }
