@@ -43,12 +43,12 @@ func Logging(logger *logrus.Logger) func(next http.Handler) http.Handler {
 			}
 
 			logger.WithFields(logrus.Fields{
-				"rid":         rid,
-				"status":      status,
-				"duration_ms": dur.Round(time.Millisecond),
-				"method":      r.Method,
-				"path":        r.URL.RequestURI(),
-			})
+				"rid":      rid,
+				"status":   status,
+				"duration": dur.Round(time.Millisecond),
+				"method":   r.Method,
+				"path":     r.URL.RequestURI(),
+			}).Info("request")
 		})
 	}
 }
