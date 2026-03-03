@@ -26,6 +26,7 @@ func (r *StatusRecorder) Write(b []byte) (int, error) {
 
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rid := GetRequestID(r)
 		start := time.Now()
 
 		rec := &StatusRecorder{ResponseWriter: w}
@@ -38,6 +39,6 @@ func Logger(next http.Handler) http.Handler {
 		if status == 0 {
 			status = http.StatusOK
 		}
-		log.Printf("HTTP %d %s %s %s", rec.status, dur.Round(time.Millisecond), r.Method, r.URL.RequestURI())
+		log.Printf("HTTP %d %s %s %s rid=%s", rec.status, dur.Round(time.Millisecond), r.Method, r.URL.RequestURI(), rid)
 	})
 }
