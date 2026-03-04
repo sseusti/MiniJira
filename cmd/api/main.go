@@ -21,11 +21,19 @@ import (
 
 func main() {
 	s := memory.NewStore()
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	logger := logrus.New()
-	logger.SetLevel(logrus.InfoLevel)
-	logger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+	level, _ := logrus.ParseLevel(cfg.LogLevel)
+	logger.SetLevel(level)
+	if cfg.LogFormat == "json" {
+		logger.SetFormatter(&logrus.JSONFormatter{})
+	} else {
+		logger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+	}
 
 	logger.Info("starting server")
 
@@ -50,7 +58,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := srv.Shutdown(ctx)
+	err = srv.Shutdown(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("error shutting down server")
 	}
