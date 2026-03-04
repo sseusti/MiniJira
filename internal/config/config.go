@@ -31,7 +31,7 @@ func LoadConfig() (Config, error) {
 	if LogFormat == "" {
 		LogFormat = "text"
 	}
-	err = Validate(LogLevel, allowedLevels)
+	err = Validate(LogFormat, allowedLevels)
 	if err != nil {
 		return Config{}, err
 	}

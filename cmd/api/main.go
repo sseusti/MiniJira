@@ -27,7 +27,10 @@ func main() {
 	}
 
 	logger := logrus.New()
-	level, _ := logrus.ParseLevel(cfg.LogLevel)
+	level, err := logrus.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	logger.SetLevel(level)
 	if cfg.LogFormat == "json" {
 		logger.SetFormatter(&logrus.JSONFormatter{})
