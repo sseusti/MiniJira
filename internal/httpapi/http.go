@@ -50,8 +50,8 @@ func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStor
 	mux.HandleFunc("/issue", h.Issue)
 
 	handler := http.Handler(mux)
-	handler = middleware.Logging(logger)(handler)
 	handler = middleware.RequestID(handler)
+	handler = middleware.Logging(logger)(handler)
 	handler = middleware.Recovery(logger)(handler)
 
 	return handler
