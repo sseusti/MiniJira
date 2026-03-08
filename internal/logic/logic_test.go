@@ -417,22 +417,6 @@ func TestTransitionIssue_IssueNotFound(t *testing.T) {
 }
 
 func TestTransitionIssue_InvalidInput(t *testing.T) {
-	store := &fakeStore{
-		projects: map[string]Project{
-			"PAY": {ID: 1, Key: "PAY", Name: "Payments"},
-		},
-		issues: []Issue{
-			{
-				ID:         1,
-				ProjectKey: "PAY",
-				Title:      "Fix checkout",
-				Status:     StatusOpen,
-			},
-		},
-		nextProjectID: 2,
-		nextIssueID:   2,
-	}
-
 	tests := []struct {
 		name     string
 		issueID  int
@@ -462,6 +446,22 @@ func TestTransitionIssue_InvalidInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStore{
+				projects: map[string]Project{
+					"PAY": {ID: 1, Key: "PAY", Name: "Payments"},
+				},
+				issues: []Issue{
+					{
+						ID:         1,
+						ProjectKey: "PAY",
+						Title:      "Fix checkout",
+						Status:     StatusOpen,
+					},
+				},
+				nextProjectID: 2,
+				nextIssueID:   2,
+			}
+
 			_, err := TransitionIssue(store, tt.issueID, tt.toStatus)
 			if !errors.Is(err, ErrInvalidIssue) {
 				t.Fatalf("expected ErrInvalidIssue, got %v", err)
