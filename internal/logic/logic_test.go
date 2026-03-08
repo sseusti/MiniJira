@@ -135,12 +135,12 @@ type fakeStore struct {
 	projects      map[string]Project
 	issues        []Issue
 	nextProjectID int
-	nextIssueId   int
+	nextIssueID   int
 }
 
 func (s *fakeStore) CreateIssue(i Issue) Issue {
-	i.ID = s.nextIssueId
-	s.nextIssueId++
+	i.ID = s.nextIssueID
+	s.nextIssueID++
 
 	s.issues = append(s.issues, i)
 
@@ -201,50 +201,157 @@ func (s *fakeStore) List() []Project {
 
 func TestCreateIssue_Success(t *testing.T) {
 	store := &fakeStore{
-		projects:      map[string]Project{"PAY": Project{}},
+		projects: map[string]Project{
+			"PAY": {
+				ID:   1,
+				Key:  "PAY",
+				Name: "Payments",
+			},
+		},
 		issues:        []Issue{},
-		nextProjectID: 1,
-		nextIssueId:   1,
+		nextProjectID: 2,
+		nextIssueID:   1,
+	}
+
+	issue, err := CreateIssue(store, "PAY", "Fix checkout")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if issue.ID != 1 {
+		t.Fatalf("expected issue ID 1, got %d", issue.ID)
+	}
+
+	if issue.ProjectKey != "PAY" {
+		t.Fatalf("expected project key PAY, got %s", issue.ProjectKey)
+	}
+
+	if issue.Title != "Fix checkout" {
+		t.Fatalf("expected title Fix checkout, got %s", issue.Title)
+	}
+
+	if issue.Status != StatusOpen {
+		t.Fatalf("expected status %s, got %s", StatusOpen, issue.Status)
+	}
+}
+
+func TestCreateIssue_InvalidInput(t *testing.T) {
+	store := &fakeStore{
+		projects: map[string]Project{
+			"PAY": Project{
+				ID:   1,
+				Key:  "PAY",
+				Name: "Payments",
+			},
+		},
+		issues:        []Issue{},
+		nextProjectID: 2,
+		nextIssueID:   1,
 	}
 
 	tests := []struct {
 		name       string
-		id         int
 		projectKey string
 		title      string
-		status     string
 	}{
 		{
-			name:       "project key exists",
-			id:         1,
-			projectKey: "PAY",
+			name:       "empty project key",
+			projectKey: "",
 			title:      "Payments",
-			status:     StatusOpen,
+		},
+		{
+			name:       "empty title",
+			projectKey: "PAY",
+			title:      "",
+		},
+		{
+			name:       "blank project key",
+			projectKey: "   ",
+			title:      "Payments",
+		},
+		{
+			name:       "blank title",
+			projectKey: "PAY",
+			title:      "   ",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := CreateIssue(store, tt.projectKey, tt.title)
+
+			if !errors.Is(err, ErrInvalidIssue) {
+				t.Fatalf("expected ErrInvalidIssue, got %v", err)
+			}
+		})
+	}
+}
+
+func TestCreateIssue_ProjectNotFound(t *testing.T) {
+	store := &fakeStore{
+		projects:      map[string]Project{},
+		issues:        []Issue{},
+		nextProjectID: 1,
+		nextIssueID:   1,
+	}
+
+	_, err := CreateIssue(store, "PAY", "Fix checkout")
+	if !errors.Is(err, ErrProjectNotFound) {
+		t.Fatalf("expected ErrProjectNotFound, got %v", err)
+	}
+}
+
+func TestTransitionIssue_Success(t *testing.T) {
+	store := &fakeStore{
+		projects: map[string]Project{
+			"PAY": Project{
+				ID:   1,
+				Key:  "PAY",
+				Name: "Payments",
+			},
+		},
+		issues: []Issue{
+			Issue{
+				ID:         1,
+				ProjectKey: "PAY",
+				Title:      "Fix checkout",
+				Status:     StatusOpen,
+			},
+		},
+		nextProjectID: 2,
+		nextIssueID:   2,
+	}
+
+	tests := []struct {
+		name       string
+		fromStatus string
+		toStatus   string
+	}{
+		{
+			name:       "open to in progress",
+			fromStatus: StatusOpen,
+			toStatus:   StatusInProgress,
+		},
+		{
+			name:       "in progress to done",
+			fromStatus: StatusInProgress,
+			toStatus:   StatusDone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store.issues[0].ProjectKey = tt.fromStatus
+
+			_, err := TransitionIssue(store, 1, tt.toStatus)
 			if err != nil {
-				t.Fatalf("expected no errors, got %v", err)
+				t.Fatalf("expected no error, got %v", err)
 			}
 
-			if tt.status != StatusOpen {
-				t.Fatalf("expected status %s, got %s", StatusOpen, tt.status)
+			if store.issues[0].Status != tt.toStatus {
+				t.Fatalf("expected status %s, got %s", tt.toStatus, store.issues[0].Status)
 			}
 
-			if tt.projectKey != "PAY" {
-				t.Fatalf("project key should be PAY, got %v", tt.projectKey)
-			}
-
-			if tt.title != "Payments" {
-				t.Fatalf("title should be Payments, got %v", tt.title)
-			}
-
-			if tt.id != 1 {
-				t.Fatalf("id should be 1, got %v", tt.id)
-			}
 		})
 	}
 }
