@@ -302,26 +302,6 @@ func TestCreateIssue_ProjectNotFound(t *testing.T) {
 }
 
 func TestTransitionIssue_Success(t *testing.T) {
-	store := &fakeStore{
-		projects: map[string]Project{
-			"PAY": Project{
-				ID:   1,
-				Key:  "PAY",
-				Name: "Payments",
-			},
-		},
-		issues: []Issue{
-			Issue{
-				ID:         1,
-				ProjectKey: "PAY",
-				Title:      "Fix checkout",
-				Status:     StatusOpen,
-			},
-		},
-		nextProjectID: 2,
-		nextIssueID:   2,
-	}
-
 	tests := []struct {
 		name       string
 		fromStatus string
@@ -341,7 +321,20 @@ func TestTransitionIssue_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store.issues[0].ProjectKey = tt.fromStatus
+			store := &fakeStore{
+				projects: map[string]Project{
+					"PAY": {ID: 1, Key: "PAY", Name: "Payments"},
+				},
+				issues: []Issue{
+					{
+						ID:         1,
+						ProjectKey: "PAY",
+						Title:      "Fix checkout",
+						Status:     tt.fromStatus,
+					},
+				},
+				nextIssueID: 2,
+			}
 
 			_, err := TransitionIssue(store, 1, tt.toStatus)
 			if err != nil {
@@ -349,9 +342,130 @@ func TestTransitionIssue_Success(t *testing.T) {
 			}
 
 			if store.issues[0].Status != tt.toStatus {
-				t.Fatalf("expected status %s, got %s", tt.toStatus, store.issues[0].Status)
+				t.Fatalf("expected status %s, got %s",
+					tt.toStatus,
+					store.issues[0].Status)
 			}
 
+		})
+	}
+}
+
+func TestTransitionIssue_InvalidTransition(t *testing.T) {
+	tests := []struct {
+		name       string
+		fromStatus string
+		toStatus   string
+	}{
+		{
+			name:       "open to done",
+			fromStatus: StatusOpen,
+			toStatus:   StatusDone,
+		},
+		{
+			name:       "done to in progress",
+			fromStatus: StatusDone,
+			toStatus:   StatusInProgress,
+		},
+		{
+			name:       "done to open",
+			fromStatus: StatusDone,
+			toStatus:   StatusOpen,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStore{
+				projects: map[string]Project{
+					"PAY": {ID: 1, Key: "PAY", Name: "Payments"},
+				},
+				issues: []Issue{
+					{
+						ID:         1,
+						ProjectKey: "PAY",
+						Title:      "Fix checkout",
+						Status:     tt.fromStatus,
+					},
+				},
+				nextIssueID:   2,
+				nextProjectID: 1,
+			}
+
+			_, err := TransitionIssue(store, 1, tt.toStatus)
+			if !errors.Is(err, ErrInvalidTransition) {
+				t.Fatalf("expected ErrInvalidTransition, got %v", err)
+			}
+		})
+	}
+}
+
+func TestTransitionIssue_IssueNotFound(t *testing.T) {
+	store := &fakeStore{
+		projects: map[string]Project{
+			"PAY": {ID: 1, Key: "PAY", Name: "Payments"},
+		},
+		issues:        []Issue{},
+		nextIssueID:   1,
+		nextProjectID: 2,
+	}
+
+	_, err := TransitionIssue(store, 999, StatusInProgress)
+	if !errors.Is(err, ErrIssueNotFound) {
+		t.Fatalf("expected ErrIssueNotFound, got %v", err)
+	}
+}
+
+func TestTransitionIssue_InvalidInput(t *testing.T) {
+	store := &fakeStore{
+		projects: map[string]Project{
+			"PAY": {ID: 1, Key: "PAY", Name: "Payments"},
+		},
+		issues: []Issue{
+			{
+				ID:         1,
+				ProjectKey: "PAY",
+				Title:      "Fix checkout",
+				Status:     StatusOpen,
+			},
+		},
+		nextProjectID: 2,
+		nextIssueID:   2,
+	}
+
+	tests := []struct {
+		name     string
+		issueID  int
+		toStatus string
+	}{
+		{
+			name:     "zero issue id",
+			issueID:  0,
+			toStatus: StatusOpen,
+		},
+		{
+			name:     "invalid issue id",
+			issueID:  -1,
+			toStatus: StatusOpen,
+		},
+		{
+			name:     "empty to status",
+			issueID:  1,
+			toStatus: "",
+		},
+		{
+			name:     "blank status",
+			issueID:  1,
+			toStatus: "   ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := TransitionIssue(store, tt.issueID, tt.toStatus)
+			if !errors.Is(err, ErrInvalidIssue) {
+				t.Fatalf("expected ErrInvalidIssue, got %v", err)
+			}
 		})
 	}
 }
