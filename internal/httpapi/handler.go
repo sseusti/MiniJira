@@ -3,12 +3,12 @@ package httpapi
 import (
 	"MiniJira/internal/httpapi/middleware"
 	"MiniJira/internal/logic"
+	"MiniJira/internal/usecase"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -27,18 +27,14 @@ type IssueResponse struct {
 }
 
 type Handler struct {
-	projectStore logic.ProjectStore
-	issueStore   logic.IssueStore
-	piStore      logic.ProjectIssueStore
-	logger       *logrus.Logger
+	service *usecase.Service
+	logger  *logrus.Logger
 }
 
-func NewHandler(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore, logger *logrus.Logger) *Handler {
+func NewHandler(service *usecase.Service, logger *logrus.Logger) *Handler {
 	return &Handler{
-		projectStore: projectStore,
-		issueStore:   issueStore,
-		piStore:      piStore,
-		logger:       logger,
+		service: service,
+		logger:  logger,
 	}
 }
 
@@ -74,7 +70,7 @@ func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /projects [get]
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	p := h.projectStore.List()
+	p := h.service.ListProjects()
 	WriteJSON(w, http.StatusOK, toProjectResponses(p))
 	return
 }
@@ -99,7 +95,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := logic.CreateProject(h.projectStore, req.Key, req.Name)
+	created, err := h.service.CreateProject(req.Key, req.Name)
 	if errors.Is(err, logic.ErrInvalidProject) {
 		WriteError(w, http.StatusBadRequest, "invalid request")
 		return
@@ -139,7 +135,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := logic.CreateIssue(h.piStore, issue.ProjectKey, issue.Title)
+	created, err := h.service.CreateIssue(issue.ProjectKey, issue.Title)
 	if errors.Is(err, logic.ErrInvalidIssue) {
 		WriteError(w, http.StatusBadRequest, "invalid request")
 		return
@@ -170,15 +166,11 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /issues [get]
 func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
-	projectKey := r.URL.Query().Get("project_key")
-
-	projectKey = strings.TrimSpace(projectKey)
-	if projectKey == "" {
+	issues, err := h.service.ListIssues(r.URL.Query().Get("project_key"))
+	if errors.Is(err, logic.ErrInvalidIssue) {
 		WriteError(w, http.StatusBadRequest, "invalid request")
 		return
 	}
-
-	issues := h.issueStore.ListIssuesByProjectKey(projectKey)
 	WriteJSON(w, http.StatusOK, toIssueResponses(issues))
 	return
 }
@@ -209,19 +201,13 @@ func (h *Handler) Issues(w http.ResponseWriter, r *http.Request) {
 // @Router /issue [get]
 func (h *Handler) GetIssue(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
-	idStr = strings.TrimSpace(idStr)
-	if idStr == "" {
-		WriteError(w, http.StatusBadRequest, "invalid request")
-		return
-	}
-
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id < 1 {
 		WriteError(w, http.StatusBadRequest, "invalid request")
 		return
 	}
 
-	issue, err := logic.GetIssue(h.issueStore, id)
+	issue, err := h.service.GetIssue(id)
 	if errors.Is(err, logic.ErrIssueNotFound) {
 		WriteError(w, http.StatusNotFound, "not found")
 		return
@@ -271,7 +257,7 @@ func (h *Handler) TransitionIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := logic.TransitionIssue(h.issueStore, issue.IssueID, issue.ToStatus)
+	updated, err := h.service.TransitionIssue(issue.IssueID, issue.ToStatus)
 	if errors.Is(err, logic.ErrInvalidIssue) {
 		WriteError(w, http.StatusBadRequest, "invalid request")
 		return

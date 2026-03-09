@@ -4,6 +4,7 @@ import (
 	_ "MiniJira/docs"
 	"MiniJira/internal/httpapi/middleware"
 	"MiniJira/internal/logic"
+	"MiniJira/internal/usecase"
 	"encoding/json"
 	"net/http"
 
@@ -39,7 +40,8 @@ type HealthResponse struct {
 }
 
 func NewMux(projectStore logic.ProjectStore, issueStore logic.IssueStore, piStore logic.ProjectIssueStore, logger *logrus.Logger) http.Handler {
-	h := NewHandler(projectStore, issueStore, piStore, logger)
+	service := usecase.NewService(projectStore, issueStore, piStore)
+	h := NewHandler(service, logger)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", h.Health)
