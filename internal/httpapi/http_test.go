@@ -1,54 +1,23 @@
 package httpapi
 
 import (
-	"MiniJira/internal/store/memory"
-	"encoding/json"
-	"io"
+	"MiniJira/internal/logic"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 )
-
-func testLogger() *logrus.Logger {
-	logger := logrus.New()
-	logger.SetOutput(io.Discard)
-
-	return logger
-}
-
-func newTestHandler() http.Handler {
-	store := memory.NewStore()
-	logger := testLogger()
-	return NewMux(store, store, store, logger)
-}
 
 func TestCreateProject_HTTP(t *testing.T) {
 	handler := newTestHandler()
 
 	body := `{"key":"PAY","name":"Payments"}`
 
-	req := httptest.NewRequest(
-		http.MethodPost,
-		"/projects",
-		strings.NewReader(body),
-	)
-	req.Header.Set("Content-Type", "application/json")
-
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
+	w := performRequest(t, handler, http.MethodPost, "/projects", body)
 	if w.Code != http.StatusCreated {
-		t.Errorf("expected status 201, got %v", w.Code)
+		t.Fatalf(`expected status code 201, got %d`, w.Code)
 	}
 
 	var resp ProjectResponse
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
+	decodeJSON(t, w.Body, &resp)
 
 	if resp.ID != 1 {
 		t.Errorf("expected ID 1, got %v", resp.ID)
@@ -67,56 +36,30 @@ func TestCreateProject_HTTP(t *testing.T) {
 	}
 }
 
-func TestCreateProjet_HTTP_DuplicateKey(t *testing.T) {
+func TestCreateProject_HTTP_DuplicateKey(t *testing.T) {
 	handler := newTestHandler()
 
 	body := `{"key":"PAY","name":"Payments"}`
 
-	req1 := httptest.NewRequest(http.MethodPost, "/projects", strings.NewReader(body))
-	req1.Header.Set("Content-Type", "application/json")
+	createProject(t, handler, "PAY", "Payments")
 
-	w1 := httptest.NewRecorder()
-	handler.ServeHTTP(w1, req1)
-
-	if w1.Code != http.StatusCreated {
-		t.Fatalf("expected status 201, got %v", w1.Code)
-	}
-
-	req2 := httptest.NewRequest(http.MethodPost, "/projects", strings.NewReader(body))
-	req2.Header.Set("Content-Type", "application/json")
-
-	w2 := httptest.NewRecorder()
-	handler.ServeHTTP(w2, req2)
-
-	if w2.Code != http.StatusConflict {
-		t.Fatalf("expected status 409, got %v", w2.Code)
+	w := performRequest(t, handler, http.MethodPost, "/projects", body)
+	if w.Code != http.StatusConflict {
+		t.Fatalf(`expected status code 201, got %d`, w.Code)
 	}
 }
 
 func TestGetProjects_HTTP(t *testing.T) {
 	handler := newTestHandler()
+	createProject(t, handler, "PAY", "Payments")
 
-	body := `{"key":"PAY","name":"Payments"}`
-
-	reqCreate := httptest.NewRequest(http.MethodPost, "/projects", strings.NewReader(body))
-	reqCreate.Header.Set("Content-Type", "application/json")
-
-	wCreate := httptest.NewRecorder()
-	handler.ServeHTTP(wCreate, reqCreate)
-
-	req := httptest.NewRequest(http.MethodGet, "/projects", nil)
-
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-
+	w := performRequest(t, handler, http.MethodGet, "/projects", "")
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %v", w.Code)
+		t.Fatalf(`expected status code 200, got %d`, w.Code)
 	}
 
 	var resp []ProjectResponse
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
+	decodeJSON(t, w.Body, &resp)
 
 	if len(resp) != 1 {
 		t.Fatalf("expected 1 project, got %d", len(resp))
@@ -124,5 +67,32 @@ func TestGetProjects_HTTP(t *testing.T) {
 
 	if resp[0].Key != "PAY" {
 		t.Fatalf("expected key PAY, got %s", resp[0].Key)
+	}
+}
+
+func TestCreateIssue_HTTP(t *testing.T) {
+	handler := newTestHandler()
+	createProject(t, handler, "PAY", "Payments")
+
+	body := `{"project_key":"PAY","title":"Fix checkout"}`
+	w := performRequest(t, handler, http.MethodPost, "/issues", body)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf(`expected status code 201, got %d`, w.Code)
+	}
+
+	var resp IssueResponse
+	decodeJSON(t, w.Body, &resp)
+
+	if resp.ProjectKey != "PAY" {
+		t.Fatalf("expected project key PAY, got %s", resp.ProjectKey)
+	}
+
+	if resp.Title != "Fix checkout" {
+		t.Fatalf("expected title Fix checkout, got %s", resp.Title)
+	}
+
+	if resp.Status != logic.StatusOpen {
+		t.Fatalf("expected status open, got %s", resp.Status)
 	}
 }
