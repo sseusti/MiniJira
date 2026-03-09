@@ -30,12 +30,12 @@ func Recovery(logger *logrus.Logger) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rec := &headerRecorder{ResponseWriter: w}
 			defer func() {
-				if rec := recover(); rec != nil {
+				if panicVal := recover(); panicVal != nil {
 					rid := GetRequestID(r)
 					stack := debug.Stack()
 					logger.WithFields(logrus.Fields{
 						"rid":   rid,
-						"panic": rec,
+						"panic": panicVal,
 					}).Errorf("panic recovered\n%s", string(stack))
 					if !rec.wroteHeader {
 						rec.Header().Set("Content-Type", "application/json")
